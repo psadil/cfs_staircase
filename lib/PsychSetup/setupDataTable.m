@@ -12,6 +12,8 @@ data.sex = repelem(demographics(1), expParams.nTrials)';
 data.ethnicity = repelem(demographics(2), expParams.nTrials)';
 data.race = repelem(demographics(3), expParams.nTrials)';
 data.trial = (1:expParams.nTrials)';
+data.item = randi(expParams.nTrials,[expParams.nTrials,1]);
+data.block = repelem(1:10, expParams.nTrials/10)';
 data.tStart = NaN(expParams.nTrials,1);
 data.tEnd = NaN(expParams.nTrials,1);
 

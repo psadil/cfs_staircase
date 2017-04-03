@@ -1,6 +1,5 @@
 function main(varargin)
 
-% Screen('Preference', 'SkipSyncTests', 1);
 
 %% collect input
 % use the inputParser class to deal with arguments
@@ -22,7 +21,7 @@ if exit_stat==1
     return
 end
 expParams = setupExpParams(input.debugLevel);
-stParams = setupStaircaseParams(input.debugLevel);
+sa = setupSAParams(input.debugLevel);
 
 demographics = getDemographics(constants);
 
@@ -31,22 +30,30 @@ window = setupWindow(input, constants, expParams);
 data = setupDataTable(expParams, input, demographics);
 keys = setupKeys;
 [mondrians, window] = makeMondrianTexes(window);
-arrows = makeArrowTexes(window);
 
 responseHandler = makeInputHandlerFcn(input.responder);
 
-
+roboResps = setupRobotResponses(input.debugLevel, expParams);
 %% main experimental loop
 
 giveInstruction(window, keys, responseHandler, constants);
 
 for trial = 1:expParams.nTrials
     
+    if trial > 1
+       data.transparency(trial) = saParams.x1;
+    else
+       data.transparency(trial) = ...
+          SA(data.transparency(trial-1), trial, data.rt(trial-1), sa); 
+    end
+    
+    stims = makeBlockTexs(data, mod(trial,10)+1, window);
+    
     % function that presents arrow stim and collects response
     [ data.response(trial), data.rt(trial), data.tStart(trial), data.tEnd(trial), exit_flag] = ...
-        elicitArrowResponse(window, responseHandler,...
-        arrows(data.correctDirection(trial)).tex, data.rightEye(trial),...
-        keys, mondrians, expParams, constants, answers{data.correctDirection(trial)},...
+        elicitBCFS(window, responseHandler,...
+        stims(trial).tex, data.rightEye(trial),...
+        keys, mondrians, expParams, constants, roboResps.latencies(trial),...
         data.bothEyes(trial));
     
     if exit_flag==1
@@ -64,7 +71,6 @@ for trial = 1:expParams.nTrials
     % inter-trial-interval
     iti(window, expParams.iti);
     
-    stParams = staircaseAlgorithm(data.rt, stParams);
     
 end
 
@@ -129,3 +135,36 @@ KbQueueFlush(constants.device);
 KbQueueRelease(constants.device);
 end
 
+function stims = makeBlockTexs(data, block, window)
+%genBlockTexs generates textures for 1 study/text cycle (block)
+
+stimTab = data(data.block == block,:);
+    
+stims = struct('id', stimTab.item);
+
+% grab all images
+[im, ~, alpha] = arrayfun(@(x) imread(fullfile(pwd,...
+    'stims', 'expt', 'whole', ['object', num2str(x.name), '_noBkgrd'], 'png')), ...
+    stims, 'UniformOutput', 0);
+stim_wAlpha = cellfun(@(x, n) cat(3,x,x,x,n), im, alpha, 'UniformOutput', 0);
+
+% make textures of images
+cellTestAp1 = num2cell(cellfun(@(x) Screen('MakeTexture',window.pointer,x), stim_wAlpha));
+
+% name textures of each stim
+[stims(1:size(stims,1)).image] = deal(cellTestAp1{:});
+
+stims(slide).tex = arrayfun(@(x) ...
+    drawToOffScreenWindow(x.image,window), stims, 'UniformOutput', false);
+    
+
+    function tex = drawToOffScreenWindow(image, window)
+        
+        tex = Screen('OpenOffScreenWindow', window.screenNumber, window.bgColor);
+        
+        % final bracket could include alpha
+        Screen('MakeTexture',window.pointer,image,[],[],[],[],[]);
+        Screen('DrawTexture',window.pointer,image,[],[],[],[],[]);
+    end
+
+end

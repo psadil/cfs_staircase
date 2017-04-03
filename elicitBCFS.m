@@ -1,10 +1,16 @@
-function [ response, rt, tStart, vbl, exit_flag ] = elicitStimResponse( window, responseHandler,...
+function [ response, rt, tStart, vbl, exit_flag ] = elicitBCFS( window, responseHandler,...
     tex, rightEye, keys, mondrians, expParams, constants, answer, bothEyes )
 %collectResponses Show arrow until participant makes response, and collect
 %that response
 response = {'NO RESPONSE'};
 rt = NaN;
 exit_flag = 0;
+
+
+rosie.text1 = 'no image detected - 0';
+rosie.text2 = 'possibly saw, couldn''t name - 1';
+rosie.text3 = 'definitely saw, but unsure what it was (could possibly guess) - 2';
+rosie.text4 = 'saw something very clearly, could name - 3';
 
 
 % prompt = 'Use the arrow keys to say which direction you think the arrow faced.';
