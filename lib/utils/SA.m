@@ -13,10 +13,9 @@ else
         (yn - sa.params.quant);
 end
 
-
 end
 
-
+%%
 function Y = Yn(latency, tau)
 if latency > tau
     Y=0;

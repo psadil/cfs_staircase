@@ -17,16 +17,13 @@ data.block = repelem(1:10, expParams.nTrials/10)';
 data.tStart = NaN(expParams.nTrials,1);
 data.tEnd = NaN(expParams.nTrials,1);
 
-data.trialCode = Shuffle(repelem(1:5,expParams.nTrials/5))';
+% trial type key:
+% 0 => Catch trial (no stimulus)
+% 1 => CFS (present image only to non-dominant eye)
+data.tType = Shuffle([repelem({'CFS'},expParams.nTrials*(1/5)),...
+    repelem({'NULL'},expParams.nTrials*(1/5))])';
 
-% arrow points left(1) and right(2) on half of all trials each
-data.correctDirection = (data.trialCode==1 | data.trialCode==2)+1;
-
-% Half of trials present arrow to left(0), half to right(1) eye
-data.rightEye = (data.trialCode==3 | data.trialCode==4);
-
-% on one third of trials, draw to both eyes
-data.bothEyes = (data.trialCode==5);
+data.eyes = repelem({[1,0]},expParams.nTrials);
 
 % arrow points right and left on half of all trials each
 data.response = cell(expParams.nTrials,1);
