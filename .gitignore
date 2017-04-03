@@ -34,6 +34,7 @@ vignettes/*.pdf
 
 # output
 *.pdf
+*.png
 
 # Matlab files
 *.asv
