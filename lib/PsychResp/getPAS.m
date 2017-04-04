@@ -1,26 +1,43 @@
-function [ output_args ] = getPAS( window )
-%UNTITLED Summary of this function goes here
-%   Detailed explanation goes here
+function [ response, rt, exitFlag ] = getPAS( window, keys, answer )
+% getPAS: prompt and receive PAS response
+response = {'NO RESPONSE'};
+rt = NaN;
+exitFlag = {'OK'};
 
 
-reminder(1).pas = 'no image detected - 0';
-reminder(2).pas = 'possibly saw, couldn''t name - 1';
-reminder(3).pas = 'definitely saw, but unsure what it was (could possibly guess) - 2';
-reminder(4).pas = 'saw something very clearly, could name - 3';
+KbQueueCreate(constants.device, keys);
+KbQueueStart(constants.device);
 
-text_answer = 'Answer:  ';
+Screen('Flip', window.pointer); % Display cue and prompt
+for eye = 0:1
+    Screen('SelectStereoDrawBuffer',window.pointer, eye);
+    
+    DrawFormattedText(window.pointer,'no image detected - 0',...
+        'center', window.winRect(4)*.2);
+    DrawFormattedText(window.pointer,'possibly saw, couldn''t name - 1',...
+        'center', window.winRect(4)*.3);
+    DrawFormattedText(window.pointer,'definitely saw, but unsure what it was (could possibly guess) - 2',...
+        'center', window.winRect(4)*.4);
+    DrawFormattedText(window.pointer,'definitely saw, could name - 3',...
+        'center', window.winRect(4)*.5);
+    
+    DrawFormattedText(window.pointer, '[Press Enter to Continue]', ...
+        'center', window.winRect(4)*.8);
+end
+tStart = Screen('Flip', window.pointer);
 
-% parameters
-rosie.tCenter1 = [p.xCenter-RectWidth(Screen('TextBounds', p.window, rosie.text1))/2  p.yCenter-450];
-rosie.tCenter2 = [p.xCenter-RectWidth(Screen('TextBounds', p.window, rosie.text2))/2  p.yCenter-410];
-rosie.tCenter3 = [p.xCenter-RectWidth(Screen('TextBounds', p.window, rosie.text3))/2  p.yCenter-370];
-rosie.tCenter4 = [p.xCenter-RectWidth(Screen('TextBounds', p.window, rosie.text4))/2  p.yCenter-330];
+while 1
+    [keys_pressed, press_times] = responseHandler(constants.device, answer);
+    if ~isempty(keys_pressed)
+        [response, rt, exitFlag] = ...
+            wrapper_keyLogic(keys_pressed, press_times, tStart);
+        break;
+    end
+end
 
-rosie.tCenter5 = [p.xCenter-RectWidth(Screen('TextBounds', p.window, rosie.text5))/2  p.yCenter-100];
-rosie.tCenter6 = [p.xCenter-RectWidth(Screen('TextBounds', p.window, rosie.text6))/2  p.yCenter-60];
-
-answerBox = [p.xCenter-300 p.yCenter+150 p.xCenter+100 p.yCenter+550];
-
+KbQueueStop(constants.device);
+KbQueueFlush(constants.device);
+KbQueueRelease(constants.device);
 
 end
 

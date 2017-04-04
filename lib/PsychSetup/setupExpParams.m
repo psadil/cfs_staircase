@@ -14,11 +14,10 @@ switch debugLevel
         expParams.mondrianHertz = 120/8;
         expParams.iti = 1; % seconds to wait between each trial
         expParams.nTrials = 150;
-        expParams.arrowDur = 100; % max duration until arrows are at full contrast
+        expParams.studyDur = 10; % max duration until arrows are at full contrast
     case 1
         % Level 1: Run through all trials giving correct answers. Speed at
         % anticipanted slowest subject speed
-        
         expParams.mondrianHertz = 120/8;
         expParams.iti = 1;
         expParams.nTrials = 150;

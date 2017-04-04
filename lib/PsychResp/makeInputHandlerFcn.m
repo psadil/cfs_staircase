@@ -88,9 +88,16 @@ end
         [keys_pressed, press_times] = checkKeys(device);
     end
 
-    function [keys_pressed, press_times] = SimpleKeypressRobot(device, answer)
+    function [keys_pressed, press_times] = SimpleKeypressRobot(device, answer, varargin)
         
-        inputemu('key_normal',answer);
+        switch nargin
+            case 3
+                if varargin{1}
+                    inputemu('key_normal',answer);
+                end
+            case 2
+                inputemu('key_normal',answer);
+        end
         
         %         if strcmp(answer, 'SPACE')
         %             rob.keyPress(java.awt.event.KeyEvent.VK_SPACE);

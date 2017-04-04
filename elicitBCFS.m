@@ -1,19 +1,25 @@
 function [ response, rt, tStart, vbl, exitFlag ] = elicitBCFS( window, responseHandler,...
-    tex, eyes, keys, mondrians, expParams, constants, answer, maxAlpha )
+    tex, eyes, keys, mondrians, expParams, constants, roboRT, maxAlpha, jitter )
 %collectResponses Show arrow until participant makes response, and collect
 %that response
 response = {'NO RESPONSE'};
 rt = NaN;
 exitFlag = {'OK'};
 
-alpha.tex = linspace(0,maxAlpha,maxAlpha);
+% transparency of texture increases at constant rate, up to a given trial's
+% maximum value
+alpha.tex = [repelem(0,jitter), linspace(0,maxAlpha,maxAlpha)];
+% transparency of mondrians is typically locked at 1
+alpha.mondrian = [repelem(1,jitter), expParams.alpha.mondrian];
+% both transparencies needed to have additional jitter added to beginning
 
 % prompt = 'Use the arrow keys to say which direction you think the arrow faced.';
 prompt = [];
 slack = .5;
+goRobo = 0;
 
 % KbQueueCreate(constants.device, keys.arrows+keys.escape);
-KbQueueCreate(constants.device, keys.arrows+keys.escape);
+KbQueueCreate(constants.device, keys.enter+keys.escape);
 
 drawFixation(window);
 vbl = Screen('Flip', window.pointer); % Display cue and prompt
@@ -22,26 +28,24 @@ for tick = 0:expParams.nTicks-1
     % for each tick, pick out one of the mondrians to draw
     drawStimulus(window, prompt, eyes,...
         tex, mondrians(mod(tick,size(mondrians,2))+1).tex, ...
-        expParams.alpha.mondrian(mod(tick, size(expParams.alpha.mondrian,2))+1), ...
+        alpha.mondrian(mod(tick, size(expParams.alpha.mondrian,2))+1), ...
         alpha.tex(min(length(alpha.tex), tick+1)));
     
-    % flip only in synch with mondrian presentation rate
+    % flip only in sync with mondrian presentation rate
     vbl = Screen('Flip', window.pointer, vbl + (expParams.mondrianHertz-slack)*window.ifi );
     if tick == 0
         tStart = vbl;
         KbQueueStart(constants.device);
+    elseif tick >= roboRT
+        goRobo = 1;
     end
     
-    if tick >= expParams.respDelay
-        [keys_pressed, press_times] = responseHandler(constants.device, answer);
-        
-        if ~isempty(keys_pressed)
-            [response, rt, exitFlag] = ...
-                wrapper_keyLogic(keys_pressed, press_times, tStart);
-            break;
-        end
+    [keys_pressed, press_times] = responseHandler(constants.device, '\ENTER', goRobo);
+    if ~isempty(keys_pressed)
+        [response, rt, exitFlag] = ...
+            wrapper_keyLogic(keys_pressed, press_times, tStart);
+        break;
     end
-    
 end
 
 KbQueueStop(constants.device);
@@ -53,10 +57,9 @@ if ~stcmp(response,'NO RESPONSE') && ...
     exitFlag = {'CAUGHT'};
 end
 
-
 end
 
-function drawStimulus(window, prompt, eyes, arrowTex, mondrianTex, alpha_mondrian, alpha_arrow)
+function drawStimulus(window, prompt, eyes, imageTex, mondrianTex, alpha_mondrian, alpha_tex)
 
 for eye = 1:2
     Screen('SelectStereoDrawBuffer',window.pointer,eye-1);
@@ -66,9 +69,10 @@ for eye = 1:2
     
     if eyes(eye)
         % draw arrow
-        Screen('DrawTexture', window.pointer, arrowTex,[],[],[],[],alpha_arrow);
+        Screen('DrawTexture', window.pointer, imageTex,[],[],[],[],alpha_tex);
     end
     
+    % small white fixation square
     Screen('FillRect',window.pointer,1,CenterRect([0 0 8 8],window.shifts));
     
     % prompt participant to respond
@@ -77,28 +81,3 @@ end
 Screen('DrawingFinished',window.pointer);
 
 end
-
-
-function [response, rt, exitFlag] = ...
-    wrapper_keyLogic(keys_pressed, press_times, tStart)
-% There should ideally be only one, keypress ever. If there happens
-% to be more than one keypress, only take the first one.
-% Add the direction just pressed to the input
-% string, and record the timestamp of its keypress.
-% For arrow response, this will produce either 'left' or 'right'
-
-if any(keys_pressed == 102)
-    key = 39; %RightArrow
-    rt = press_times(102) - tStart;
-elseif any(keys_pressed == 100)
-    key = 37; %LeftArrow
-    rt = press_times(100) - tStart;
-else
-    key = keys_pressed(1);
-end
-response = {KbName(key)};
-if any(keys_pressed==KbName('ESCAPE'))
-    exitFlag = {'ESCAPE'};
-end
-end
-
