@@ -36,18 +36,9 @@ positions(4,:,:) = min(positions(2,:,:) + repmat(minL,[1,nSquares,nSlides]) +...
 % shift mondrians to center of screen
 window.shifts = CenterRect([0 0 totalFrame-maxL totalFrame-maxL], Screen('Rect',window.pointer));
 shifts2 = repmat([window.shifts(1:2)';window.shifts(1:2)'],[1,nSquares,nSlides]);
-positions = positions + shifts2;
+mondrians = struct('positions', positions + shifts2);
+mondrians.color = intensities;
 
-mondrians(1:nSlides) = struct('tex',NaN([window.res.width, window.res.height]));
-for slide=1:nSlides
-    
-    mondrians(slide).tex = Screen('OpenOffScreenWindow', window.screenNumber, ...
-        window.bgColor);
-    
-    Screen('FillRect', mondrians(slide).tex, repmat(intensities(:,slide)',[3,1]), squeeze(positions(:,:,slide)));
-    %         Screen('FillRect', mondrians(slide).tex, intensities(:,slide)', squeeze(positions(:,:,slide)));
-    
-end
 
 end
 
