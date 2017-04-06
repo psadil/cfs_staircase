@@ -8,13 +8,14 @@ ip = inputParser;
 addParamValue(ip,'subject', 0, @isnumeric);
 addParamValue(ip,'dominantEye', 'Right', @(x) sum(strcmp(x, {'Left','Right'}))==1);
 addParamValue(ip,'refreshRate', 120, @isnumeric);
-addParamValue(ip,'debugLevel',0, @(x) isnumeric(x) && x >= 0);
+addParamValue(ip,'debugLevel',1, @(x) isnumeric(x) && x >= 0);
 addParamValue(ip,'responder', 'user', @(x) sum(strcmp(x, {'user','simpleKeypressRobot'}))==1)
 parse(ip,varargin{:});
 input = ip.Results;
 
 
 %% setup
+PsychDefaultSetup(2);
 [constants, exit_stat] = setupConstants(input, ip);
 if exit_stat==1
     windowCleanup(constants);
@@ -32,8 +33,6 @@ keys = setupKeys;
 [mondrians, window] = makeMondrianTexes(window);
 
 responseHandler = makeInputHandlerFcn(input.responder);
-
-roboResps = setupRobotResponses(input.debugLevel, expParams, 'INIT');
 %% main experimental loop
 
 giveInstruction(window, keys, responseHandler, constants);
@@ -41,37 +40,37 @@ giveInstruction(window, keys, responseHandler, constants);
 trial_SA = 1;
 for trial = 1:expParams.nTrials
     
-    data.transparency(trial) = wrapper_SA(data, trial, sa, roboResps, input, trial_SA);
+    data.transparency(trial) = wrapper_SA(data, trial, sa, trial_SA);
     roboResps.rt(trial) = ...
         setupRobotResponses(data.transparency(trial), input.debugLevel,...
-        sa, expParams, data.jitter(trial));
+        sa, expParams, data.jitter(trial), data.tType{trial});
     
     % make texture for this trial (function is setup to hopefully handle
     % creation of many textures if graphics card could handle that
-    stims = makeTexs(data, trial, data.transparency(trial), window);
+    stims = makeTexs(data, trial, window);
         
     % function that presents arrow stim and collects response
     [data.response(trial), data.rt(trial),...
         data.tStart(trial), data.tEnd(trial),...
-        data(trial).exitFlag] = ...
+        data.exitFlag(trial)] = ...
         elicitBCFS(window, responseHandler,...
-        stims.tex, data.eyes(trial),...
+        stims.tex, data.eyes{trial},...
         keys, mondrians, expParams, constants, roboResps.rt(trial),...
         data.transparency(trial), data.jitter(trial));
-    
+    Screen('Close', stims.tex);
     % handle exitFlag, based on responses given
-    switch data(trial).exitFlag
+    switch data.exitFlag{trial}
         case 'ESCAPE'
             break;
         case 'CAUGHT'
             showPrompt(window, 'Please, only respond when an image is present!',...
                 keys, constants, responseHandler);
         case 'OK'
-            switch data(trial).response
+            switch data.response{trial}
                 case 'NO RESPONSE'
                     iti(window, expParams.iti);
                 otherwise
-                    data.pas(trial) = getPAS(window, keys.pas, '2');
+                    data.pas(trial) = getPAS(window, keys.pas, '2', constants, responseHandler);
             end
     end
     
@@ -175,20 +174,14 @@ stims = struct('id', stimTab.item);
 
 % grab all images
 [im, ~, alpha] = arrayfun(@(x) imread(fullfile(pwd,...
-    'stims', 'expt', 'whole', ['object', num2str(x.name), '_noBkgrd'], 'png')), ...
+    'stims', 'expt', 'whole', ['object', num2str(x.id), '_noBkgrd']), 'png'), ...
     stims, 'UniformOutput', 0);
-stims.image = cellfun(@(x, n) cat(3,x,x,x,n), im, alpha, 'UniformOutput', 0);
+stims.image = cellfun(@(x, y) cat(3,x,y), im, alpha, 'UniformOutput', false);
 
-stims.tex = arrayfun(@(x) ...
-    drawToOffScreenWindow(x.image,window,slideAlpha), stims, 'UniformOutput', false);
+% make textures of images\
+% stims.tex = Screen('MakeTexture',window.pointer,stims.image);
+stims.tex = arrayfun(@(x) Screen('MakeTexture',window.pointer,x.image{:}), stims);
 
-    function tex = drawToOffScreenWindow(image, window)
-        
-        tex = Screen('OpenOffScreenWindow', window.screenNumber, window.bgColor);
-        
-        Screen('MakeTexture',tex,image);
-        Screen('DrawTexture',tex,image);
-    end
 end
 
 %% wrapper for SA algorithm
@@ -201,16 +194,16 @@ function [transparency, trial_SA] = wrapper_SA(data, trial, sa, trial_SA)
 % see those trials for which participants weren't supposed to
 % respond!
 
-if strcmp(data.tType,'NULL')
-    data.transparency(trial) = 0;
-elseif strcmp(data.tType,'CFS')
+if strcmp(data.tType{trial},'NULL')
+    transparency = 0;
+elseif strcmp(data.tType{trial},'CFS')
     data_SA = data(~strcmp(data.tType,'NULL'),:);
     if trial_SA == 1
         transparency = sa.params.x1;
     else
         transparency = ...
-            SA(data_SA.transparency(trial_SA-1),...
-            trial_SA, data_SA.rt(trial_SA-1), sa);
+            SA(data_SA.transparency{trial_SA-1},...
+            trial_SA, data_SA.rt{trial_SA-1}, sa);
     end
     trial_SA = trial_SA + 1;
 end

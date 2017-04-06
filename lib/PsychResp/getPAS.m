@@ -1,4 +1,4 @@
-function [ response, rt, exitFlag ] = getPAS( window, keys, answer )
+function [ response, rt, exitFlag ] = getPAS( window, keys, answer, constants, responseHandler)
 % getPAS: prompt and receive PAS response
 response = {'NO RESPONSE'};
 rt = NaN;

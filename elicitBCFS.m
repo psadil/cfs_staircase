@@ -8,7 +8,7 @@ exitFlag = {'OK'};
 
 % transparency of texture increases at constant rate, up to a given trial's
 % maximum value
-alpha.tex = [repelem(0,jitter), linspace(0,maxAlpha,maxAlpha)];
+alpha.tex = [repelem(0,jitter), linspace(0,maxAlpha,(maxAlpha*10)+1)];
 % transparency of mondrians is typically locked at 1
 alpha.mondrian = [repelem(1,jitter), expParams.alpha.mondrian];
 % both transparencies needed to have additional jitter added to beginning
@@ -22,6 +22,7 @@ goRobo = 0;
 KbQueueCreate(constants.device, keys.enter+keys.escape);
 
 drawFixation(window);
+Screen('PreloadTextures',window.pointer,tex);
 vbl = Screen('Flip', window.pointer); % Display cue and prompt
 for tick = 0:expParams.nTicks-1
     
@@ -52,7 +53,7 @@ KbQueueStop(constants.device);
 KbQueueFlush(constants.device);
 KbQueueRelease(constants.device);
 
-if ~stcmp(response,'NO RESPONSE') && ...
+if ~strcmp(response,'NO RESPONSE') && ...
         ((alpha.tex(min(length(alpha.tex), tick+1)) == 0) || (max(alpha.tex)==0))
     exitFlag = {'CAUGHT'};
 end
@@ -68,8 +69,8 @@ for eye = 1:2
     Screen('DrawTexture', window.pointer, mondrianTex,[],[],[],[],alpha_mondrian);
     
     if eyes(eye)
-        % draw arrow
-        Screen('DrawTexture', window.pointer, imageTex,[],[],[],[],alpha_tex);
+%         Screen('DrawTexture', window.pointer, imageTex,[],[],[],alpha_tex);
+        Screen('DrawTexture', window.pointer, imageTex,[],window.imagePlace,[],[],alpha_tex);
     end
     
     % small white fixation square

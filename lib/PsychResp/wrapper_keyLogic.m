@@ -5,6 +5,8 @@ function [response, rt, exitFlag] = ...
 % Add the direction just pressed to the input
 % string, and record the timestamp of its keypress.
 % For arrow response, this will produce either 'left' or 'right'
+rt = NaN;
+exitFlag = {'OK'};
 
 if any(keys_pressed == 102)
     key = 39; %RightArrow

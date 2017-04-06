@@ -20,7 +20,7 @@ switch debugLevel
         % anticipanted slowest subject speed
         expParams.mondrianHertz = 120/8;
         expParams.iti = 1;
-        expParams.nTrials = 150;
+        expParams.nTrials = 100;
         expParams.arrowDur = 100;
         expParams.respDelay = 10*8;
     case 2

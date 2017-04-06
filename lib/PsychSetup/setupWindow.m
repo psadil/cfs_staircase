@@ -9,12 +9,13 @@ window.res = Screen('Resolution',window.screenNumber); % get screen resolution
 
 try
     %     Screen('Preference', 'ConserveVRAM', 4096);
+
     
     PsychImaging('PrepareConfiguration');
-    %     PsychImaging('AddTask', 'LeftView', 'StereoCrosstalkReduction', 'SubtractOther', 1);
-    %     PsychImaging('AddTask', 'RightView', 'StereoCrosstalkReduction', 'SubtractOther', 1);
-    
-    
+    %     PsychImaging('AddTask', 'LeftView', 'StereoCrosstalkReduction', 'SubtractOther', .6);
+    %     PsychImaging('AddTask', 'RightView', 'StereoCrosstalkReduction', 'SubtractOther', .6);
+
+    PsychImaging('AddTask','General','UseFastOffScreenWindows');
     window.bgColor = GrayIndex(window.screenNumber);
     [window.pointer, window.winRect] = PsychImaging('OpenWindow',...
         window.screenNumber, window.bgColor, [], [], [], expParams.stereoMode);
@@ -34,6 +35,8 @@ try
     window.right_half=[window.winRect(3)/2,window.winRect(2),window.winRect(3),window.winRect(4)];
     window.top_half=[window.winRect(1),window.winRect(2),window.winRect(3),window.winRect(4)/2];
     window.bottom_half=[window.winRect(1),window.winRect(4)/2,window.winRect(3),window.winRect(4)];
+    window.imagePlace = CenterRect([0 0 300 300], Screen('Rect',window.pointer));
+
     
     % Get some the inter-frame interval, refresh rate, and the size of our window
     window.ifi = Screen('GetFlipInterval', window.pointer);
