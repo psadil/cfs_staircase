@@ -16,6 +16,7 @@ elseif any(keys_pressed == 100)
     rt = press_times(100) - tStart;
 else
     key = keys_pressed(1);
+    rt = press_times(key) - tStart;
 end
 response = {KbName(key)};
 if any(keys_pressed==KbName('ESCAPE'))
