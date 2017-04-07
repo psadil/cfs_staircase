@@ -1,4 +1,4 @@
-function [constants, exit_stat] = setupConstants(input, ip)
+function [constants, input, exit_stat] = setupConstants(input, ip)
 exit_stat = 0;
 defaults = ip.UsingDefaults;
 
@@ -17,7 +17,7 @@ end
 
 % Define the location of some directories we might want to use
 % constants.stimDir=fullfile(constants.root_dir,'stimuli');
-constants.savePath=fullfile(constants.root_dir,'data');
+constants.savePath=fullfile(constants.root_dir,'analyses','data');
 
 % instantiate the subject number validator function
 subjectValidator = makeSubjectDataChecker(constants.savePath, input.debugLevel);
@@ -32,9 +32,9 @@ if any(ismember(defaults, expose))
         exit_stat = 1;
         return
     else
-        input = filterStructs(guiInput,input);
-        %         input.subject = str2double(input.subject);
-        input.subject = input.subject;
+        input = filterStructs(guiInput, input);
+        input.subject = str2double(input.subject);
+%         input.subject = input.subject;
     end
 else
     [validSubNum, msg] = subjectValidator(input.subject, '.csv', input.debugLevel);

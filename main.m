@@ -16,7 +16,7 @@ input = ip.Results;
 
 %% setup
 PsychDefaultSetup(2);
-[constants, exit_stat] = setupConstants(input, ip);
+[constants, input, exit_stat] = setupConstants(input, ip);
 if exit_stat==1
     windowCleanup(constants);
     return

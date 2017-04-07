@@ -1,6 +1,7 @@
 # History files
 .Rhistory
 .Rapp.history
+.Ruserdata
 
 # Session Data files
 .RData
@@ -38,3 +39,4 @@ vignettes/*.pdf
 
 # Matlab files
 *.asv
+.Rproj.user
