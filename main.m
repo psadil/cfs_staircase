@@ -47,7 +47,7 @@ for trial = 1:expParams.nTrials
     
     % make texture for this trial (function is setup to hopefully handle
     % creation of many textures if graphics card could handle that
-    stims = makeTexs(data, trial, window);
+    stims = makeTexs(data.item(trial), window);
         
     % function that presents arrow stim and collects response
     [data.response(trial), data.rt(trial),...
@@ -165,12 +165,10 @@ KbQueueRelease(constants.device);
 end
 
 %%
-function stims = makeTexs(data, whichItems, window)
+function stims = makeTexs(item, window)
 %genBlockTexs generates textures for 1 study/text cycle (block)
 
-stimTab = data(whichItems,:);
-
-stims = struct('id', stimTab.item);
+stims = struct('id', item);
 
 % grab all images
 [im, ~, alpha] = arrayfun(@(x) imread(fullfile(pwd,...
@@ -178,8 +176,7 @@ stims = struct('id', stimTab.item);
     stims, 'UniformOutput', 0);
 stims.image = cellfun(@(x, y) cat(3,x,y), im, alpha, 'UniformOutput', false);
 
-% make textures of images\
-% stims.tex = Screen('MakeTexture',window.pointer,stims.image);
+% make textures of images
 stims.tex = arrayfun(@(x) Screen('MakeTexture',window.pointer,x.image{:}), stims);
 
 end

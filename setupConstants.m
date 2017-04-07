@@ -10,11 +10,6 @@ constants.lib_dir = fullfile(constants.root_dir, 'lib');
 path(path,constants.root_dir);
 path(path, genpath(constants.lib_dir));
 
-% Make the data directory if it doesn't exist (but it should!)
-if ~exist(fullfile(constants.root_dir, 'data'), 'dir')
-    mkdir(fullfile(constants.root_dir, 'data'));
-end
-
 % Define the location of some directories we might want to use
 % constants.stimDir=fullfile(constants.root_dir,'stimuli');
 constants.savePath=fullfile(constants.root_dir,'analyses','data');
