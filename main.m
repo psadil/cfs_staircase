@@ -8,7 +8,7 @@ ip = inputParser;
 addParamValue(ip,'subject', 0, @isnumeric);
 addParamValue(ip,'dominantEye', 'Right', @(x) sum(strcmp(x, {'Left','Right'}))==1);
 addParamValue(ip,'refreshRate', 120, @isnumeric);
-addParamValue(ip,'debugLevel',1, @(x) isnumeric(x) && x >= 0);
+addParamValue(ip,'debugLevel', 1, @(x) isnumeric(x) && x >= 0);
 addParamValue(ip,'responder', 'user', @(x) sum(strcmp(x, {'user','simpleKeypressRobot'}))==1)
 parse(ip,varargin{:});
 input = ip.Results;
@@ -21,7 +21,8 @@ if exit_stat==1
     windowCleanup(constants);
     return
 end
-expParams = setupExpParams(input.debugLevel);
+expParams = setupExpParams(input.refreshRate, input.debugLevel);
+tInfo = setupTInfo(expParams, input.debugLevel);
 sa = setupSAParams(input.debugLevel);
 
 demographics = getDemographics(constants);
@@ -34,84 +35,89 @@ keys = setupKeys;
 
 responseHandler = makeInputHandlerFcn(input.responder);
 %% main experimental loop
-
-giveInstruction(window, keys, responseHandler, constants);
-
-trial_SA = 1;
-for trial = 1:expParams.nTrials
+try
+    ListenChar(-1);
+    HideCursor;
+    giveInstruction(window, keys, responseHandler, constants);
     
-    data.transparency(trial) = wrapper_SA(data, trial, sa, trial_SA);
-    roboResps.rt(trial) = ...
-        setupRobotResponses(data.transparency(trial), input.debugLevel,...
-        sa, expParams, data.jitter(trial), data.tType{trial});
-    
-    % make texture for this trial (function is setup to hopefully handle
-    % creation of many textures if graphics card could handle that
-    stims = makeTexs(data.item(trial), window);
+    trial_SA = 1;
+    for trial = 1:expParams.nTrials
         
-    % function that presents arrow stim and collects response
-    [data.response(trial), data.rt(trial),...
-        data.tStart(trial), data.tEnd(trial),...
-        data.exitFlag(trial)] = ...
-        elicitBCFS(window, responseHandler,...
-        stims.tex, data.eyes{trial},...
-        keys, mondrians, expParams, constants, roboResps.rt(trial),...
-        data.transparency(trial), data.jitter(trial));
-    Screen('Close', stims.tex);
-    % handle exitFlag, based on responses given
-    switch data.exitFlag{trial}
-        case 'ESCAPE'
-            break;
-        case 'CAUGHT'
-            showPrompt(window, 'Please, only respond when an image is present!',...
-                keys, constants, responseHandler);
-        case 'OK'
-            switch data.response{trial}
-                case 'NO RESPONSE'
-                    iti(window, expParams.iti);
-                otherwise
+        [data.transparency(trial), ~] = wrapper_SA(data, trial, sa, trial_SA);
+        roboResps.rt(trial) = ...
+            setupRobotResponses(data.transparency(trial), input.debugLevel,...
+            sa, expParams, data.jitter(trial), data.tType{trial});
+        
+        % make texture for this trial (function is setup to hopefully handle
+        % creation of many textures if graphics card could handle that
+        stims = makeTexs(data.item(trial), window);
+        
+        % function that presents arrow stim and collects response
+        [data.response(trial), data.rt(trial),...
+            data.tStart(trial), data.tEnd(trial),...
+            tInfo.vbl(tInfo.trial==trial), tInfo.missed(tInfo.trial==trial),...
+            data.exitFlag(trial)] = ...
+            elicitBCFS(window, responseHandler,...
+            stims.tex, data.eyes{trial},...
+            keys, mondrians, expParams, constants, roboResps.rt(trial),...
+            data.transparency(trial), data.jitter(trial));
+        Screen('Close', stims.tex);
+        % handle exitFlag, based on responses given
+        switch data.exitFlag{trial}
+            case 'ESCAPE'
+                break;
+            case 'CAUGHT'
+                showPromptAndWaitForResp(window, 'Please, only respond when an image is present!',...
+                    keys, constants, responseHandler);
+            case 'OK'
+                if ~strcmp(data.response{trial},'NO RESPONSE')
                     data.pas(trial) = getPAS(window, keys.pas, '2', constants, responseHandler);
-            end
+                end
+        end
+        
+        % show reminder on each block of trials. Breaks up the expt a bit
+        if mod(trial,10)==0 && trial ~= expParams.nTrials
+            showPromptAndWaitForResp(window, ['You have completed ', num2str(trial), ' out of ', num2str(expParams.nTrials), ' trials'],...
+                keys, constants, responseHandler);
+            showPromptAndWaitForResp(window, 'Remember to keep your eyes focusd on the center white square',...
+                keys, constants, responseHandler);
+        end
+        
+        % inter-trial-interval
+        iti(window, expParams.iti);
     end
     
-    % show reminder on each block of trials. Breaks up the expt a bit
-    if mod(trial,10)==0 && trial ~= expParams.nTrials
-        showPrompt(window, ['You have completed ', num2str(trial), ' out of ', num2str(expParams.nTrials), ' trials'],...
-            keys, constants, responseHandler);
-        showPrompt(window, 'Remember to keep your eyes focusd on the center white square',...
-            keys, constants, responseHandler);
-    end
+    %% save data and exit
+    writetable(data, [constants.fName, '.csv']);
     
-    % inter-trial-interval
-    iti(window, expParams.iti);
+    % end of the experiment
+    windowCleanup(constants, tInfo, expParams, input);
+    
+catch
+    psychrethrow(psychlasterror);
+    windowCleanup(constants, tInfo, expParams, input)
 end
-
-%% save data and exit
-writetable(data, [constants.fName, '.csv']);
-
-% end of the experiment
-windowCleanup(constants);
 
 end
 
 %%
 function [] = giveInstruction(window, keys, responseHandler, constants)
 
-showPrompt(window, 'You will see hidden objects emerge from flashing squares',...
+showPromptAndWaitForResp(window, 'You will see hidden objects emerge from flashing squares',...
     keys,constants,responseHandler);
-showPrompt(window, ['When you are certain that an object has emerged, press the Enter key./n',...
-    'Please press the key as soon as you are certain that an object has appeared./n',...
+showPromptAndWaitForResp(window, ['When you are certain that an object has emerged, press the Enter key.\n',...
+    'Please press the key as soon as you are certain that an object has appeared.\n',...
     'But, do NOT wait until you can identify the object.'],...
     keys,constants,responseHandler);
-showPrompt(window, ['After each trial, you will be asked about how well you could see the object./n',...
-    'no image detected - 0/n',...
-    'ossibly saw, couldn''t name - 1/n',...
-    'definitely saw, but unsure what it was (could possibly guess) - 2/n',...
-    'definitely saw, could name - 3/n',...
-    'Use the keypad to indicate your response/n',...
-    '/nYou should be pressing 2 on most trials.'],...
+showPromptAndWaitForResp(window, ['After each trial, you will be asked about how well you could see the object.\n',...
+    'no image detected - 0\n',...
+    'ossibly saw, couldn''t name - 1\n',...
+    'definitely saw, but unsure what it was (could possibly guess) - 2\n',...
+    'definitely saw, could name - 3\n',...
+    'Use the keypad to indicate your response\n',...
+    '\nYou should be pressing 2 on most trials.'],...
     keys,constants,responseHandler);
-showPrompt(window, 'Finally, always keep your eyes focused on the center white square',...
+showPromptAndWaitForResp(window, 'Finally, always keep your eyes focused on the center white square',...
     keys,constants,responseHandler);
 
 iti(window, 1);
@@ -119,18 +125,30 @@ iti(window, 1);
 end
 
 %%
-function iti(window, dur)
+function iti(window, dur, varargin)
+
+if nargin > 2
+    vbl = varargin{1};
+else
+    vbl = Screen('Flip', window.pointer);
+end
 
 drawFixation(window);
-Screen('Flip', window.pointer);
+vbl = Screen('Flip', window.pointer, vbl + window.ifi/2 );
 WaitSecs(dur);
 drawFixation(window);
-Screen('Flip', window.pointer);
+Screen('Flip', window.pointer, vbl + window.ifi/2);
 
 end
 
 %%
-function [] = showPrompt(window, prompt, keys,constants,responseHandler)
+function [] = showPromptAndWaitForResp(window, prompt, keys,constants,responseHandler, varargin)
+
+if nargin > 5
+    vbl = varargin{1};
+else
+    vbl = Screen('Flip', window.pointer);
+end
 
 for eye = 0:1
     Screen('SelectStereoDrawBuffer',window.pointer,eye);
@@ -139,13 +157,14 @@ for eye = 0:1
     DrawFormattedText(window.pointer, '[Press Enter to Continue]', ...
         'center', window.winRect(4)*.8);
 end
-Screen('Flip', window.pointer);
+Screen('DrawingFinished',window.pointer);
+Screen('Flip', window.pointer, vbl + window.ifi/2 );
 waitForEnter(keys,constants,responseHandler);
 
 end
 
 %%
-function [] = waitForEnter(keys,constants,responseHandler)
+function [exitFlag] = waitForEnter(keys,constants,responseHandler)
 
 KbQueueCreate(constants.device, keys.enter);
 KbQueueStart(constants.device);
@@ -155,8 +174,10 @@ while 1
     [keys_pressed, ~] = responseHandler(constants.device, '\ENTER');
     
     if ~isempty(keys_pressed)
+        exitFlag = {'OK'};
         break;
     end
+    
 end
 
 KbQueueStop(constants.device);

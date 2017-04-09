@@ -115,6 +115,6 @@ end
 fclose(fid);
 
 % Cleans up workspace
-clear boxSize output headerNIH stringPrompt Choices sel output i ans fid
+% clear boxSize output headerNIH stringPrompt Choices sel output i ans fid
 
 end

@@ -1,4 +1,4 @@
-function expParams = setupExpParams( debugLevel )
+function expParams = setupExpParams( refreshRate, debugLevel )
 %setupDebug setup values specific to debug levels
 
 % some defaults
@@ -11,32 +11,33 @@ switch debugLevel
     
     case 0
         % Level 0: normal experiment
-        expParams.mondrianHertz = 120/8;
+        expParams.mondrianHertz = refreshRate/8;
         expParams.iti = 1; % seconds to wait between each trial
-        expParams.nTrials = 150;
-        expParams.studyDur = 10; % max duration until arrows are at full contrast
+        expParams.nTrials = 100;
+        expParams.maxCFS = 30; % max duration until arrows are at full contrast
     case 1
         % Level 1: Run through all trials giving correct answers. Speed at
-        % anticipanted slowest subject speed
-        expParams.mondrianHertz = 120/8;
+        % anticipanted subject speed
+        expParams.mondrianHertz = refreshRate/8;
         expParams.iti = 1;
         expParams.nTrials = 100;
-        expParams.arrowDur = 100;
+        expParams.maxCFS = 30; % maximum number of ticks
         expParams.respDelay = 10*8;
     case 2
         % Level 2: Like 1, but super fast
-        expParams.mondrianHertz = 120/10;
+        expParams.mondrianHertz = refreshRate/10;
         expParams.iti = .1;
         expParams.nTrials = 150;
-        expParams.arrowDur = 100; % should be two flips
+        expParams.maxCFS = 2; % maximum number of ticks
         expParams.respDelay = 2;
 end
 
 
 %% defaults that need calculating
-expParams.nTicks = ceil(expParams.arrowDur * expParams.mondrianHertz);
+expParams.nTicks = ceil(expParams.maxCFS * expParams.mondrianHertz);
 
 expParams.alpha.mondrian = linspace(1,1,expParams.nTicks);
 expParams.alpha.arrow = linspace(0,1,100); % should always take 100
+
 
 end

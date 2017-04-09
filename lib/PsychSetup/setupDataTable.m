@@ -12,7 +12,7 @@ data.sex = repelem(demographics(1), expParams.nTrials)';
 data.ethnicity = repelem(demographics(2), expParams.nTrials)';
 data.race = repelem(demographics(3), expParams.nTrials)';
 data.trial = (1:expParams.nTrials)';
-data.item = randi(expParams.nTrials,[expParams.nTrials,1]);
+data.item = randperm(expParams.nTrials)';
 % data.block = repelem(1:10, expParams.nTrials/10)';
 data.tStart = NaN(expParams.nTrials,1);
 data.tEnd = NaN(expParams.nTrials,1);
@@ -32,6 +32,8 @@ else
     data.eyes(strcmp(data.tType,{'CFS'})) = {[0,1]}';
 end
 
+data.transparency = NaN(expParams.nTrials,1);
+data.pas = cell(expParams.nTrials,1);
 data.response = cell(expParams.nTrials,1);
 data.rt = NaN(expParams.nTrials,1);
 

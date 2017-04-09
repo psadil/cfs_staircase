@@ -1,9 +1,5 @@
 function window = setupWindow(input, constants, expParams)
 
-PsychDefaultSetup(2); % assert OpenGL install, unify keys, fix color range
-ListenChar(-1);
-HideCursor;
-
 window.screenNumber = max(Screen('Screens')); % Choose a monitor to display on
 window.res = Screen('Resolution',window.screenNumber); % get screen resolution
 
@@ -17,15 +13,12 @@ try
 
     PsychImaging('AddTask','General','UseFastOffScreenWindows');
     window.bgColor = GrayIndex(window.screenNumber);
+    window.white = WhiteIndex(window.screenNumber);
     [window.pointer, window.winRect] = PsychImaging('OpenWindow',...
         window.screenNumber, window.bgColor, [], [], [], expParams.stereoMode);
-    %     [window.pointer, window.winRect] = Screen('OpenWindow', ...
-    %         window.screenNumber, ...
-    %         window.bgColor, round(window.screen_scale),...
-    %         [], []); % final value is stereo mode. To be adjusted
     Screen('BlendFunction', window.pointer, 'GL_SRC_ALPHA', 'GL_ONE_MINUS_SRC_ALPHA');
-    %     Priority(MaxPriority(window.pointer));
-    Priority(1);
+    Priority(MaxPriority(window.pointer));
+%     Priority(1);
     
     
     % define some landmark locations to be used throughout
@@ -36,7 +29,11 @@ try
     window.top_half=[window.winRect(1),window.winRect(2),window.winRect(3),window.winRect(4)/2];
     window.bottom_half=[window.winRect(1),window.winRect(4)/2,window.winRect(3),window.winRect(4)];
     window.imagePlace = CenterRect([0 0 300 300], Screen('Rect',window.pointer));
-
+    fixCrossDimPix = 10;
+    fixXCoords = [-fixCrossDimPix, fixCrossDimPix, 0, 0];
+    fixYCoords = [0, 0, -fixCrossDimPix, fixCrossDimPix];
+    window.fixCrossCoords = [fixXCoords; fixYCoords];
+    
     
     % Get some the inter-frame interval, refresh rate, and the size of our window
     window.ifi = Screen('GetFlipInterval', window.pointer);
@@ -52,7 +49,7 @@ try
     Screen('TextColor', window.pointer, [0 0 0]); % Black text
 catch
     psychrethrow(psychlasterror);
-    windowCleanup(window)
+    windowCleanup(constants)
 end
 end
 

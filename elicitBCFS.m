@@ -1,10 +1,12 @@
-function [ response, rt, tStart, vbl, exitFlag ] = elicitBCFS( window, responseHandler,...
+function [ response, rt, tStart, tEnd, vbl, missed, exitFlag ] = elicitBCFS( window, responseHandler,...
     tex, eyes, keys, mondrians, expParams, constants, roboRT, maxAlpha, jitter )
 %collectResponses Show arrow until participant makes response, and collect
 %that response
 response = {'NO RESPONSE'};
 rt = NaN;
 exitFlag = {'OK'};
+vbl = NaN(expParams.nTicks+1,1);
+missed = NaN(expParams.nTicks+1,1);
 
 % transparency of texture increases at constant rate, up to a given trial's
 % maximum value
@@ -22,8 +24,8 @@ goRobo = 0;
 KbQueueCreate(constants.device, keys.enter+keys.escape);
 
 drawFixation(window);
-Screen('PreloadTextures',window.pointer,tex);
-vbl = Screen('Flip', window.pointer); % Display cue and prompt
+% Screen('PreloadTextures',window.pointer,tex);
+[vbl(1), ~, ~, missed(1)] = Screen('Flip', window.pointer); % Display cue and prompt
 for tick = 0:expParams.nTicks-1
     
     % for each tick, pick out one of the mondrians to draw
@@ -33,9 +35,9 @@ for tick = 0:expParams.nTicks-1
         alpha.tex(min(length(alpha.tex), tick+1)));
     
     % flip only in sync with mondrian presentation rate
-    vbl = Screen('Flip', window.pointer, vbl + (expParams.mondrianHertz-slack)*window.ifi );
+    [vbl(tick+2), ~, ~, missed(tick+2)] = Screen('Flip', window.pointer, vbl(tick+1) + (expParams.mondrianHertz-slack)*window.ifi );
     if tick == 0
-        tStart = vbl;
+        tStart = vbl(2);
         KbQueueStart(constants.device);
     elseif tick >= roboRT
         goRobo = 1;
@@ -52,6 +54,7 @@ end
 KbQueueStop(constants.device);
 KbQueueFlush(constants.device);
 KbQueueRelease(constants.device);
+tEnd = vbl(find(isnan(vbl)==0,1,'last'));
 
 if ~strcmp(response,'NO RESPONSE') && ...
         ((alpha.tex(min(length(alpha.tex), tick+1)) == 0) || (max(alpha.tex)==0))
@@ -74,7 +77,9 @@ for eye = 1:2
     end
     
     % small white fixation square
-    Screen('FillRect',window.pointer,1,CenterRect([0 0 8 8],window.shifts));
+    Screen('DrawLines', window.pointer, window.fixCrossCoords,...
+        2, window.white, window.center, 2);
+%     Screen('FillRect',window.pointer,1,CenterRect([0 0 8 8],window.shifts));
     
     % prompt participant to respond
     DrawFormattedText(window.pointer, prompt, 'center');
