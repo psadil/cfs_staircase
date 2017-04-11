@@ -12,8 +12,12 @@ path(path, genpath(constants.lib_dir));
 
 % Define the location of some directories we might want to use
 % constants.stimDir=fullfile(constants.root_dir,'stimuli');
-constants.savePath=fullfile(constants.root_dir,'analyses','data');
-
+switch input.responder
+    case 'user'
+        constants.savePath=fullfile(constants.root_dir,'analyses','data');
+    otherwise
+        constants.savePath=fullfile(constants.root_dir,'analyses','robo');
+end
 % instantiate the subject number validator function
 subjectValidator = makeSubjectDataChecker(constants.savePath, input.debugLevel);
 

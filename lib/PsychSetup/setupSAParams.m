@@ -5,15 +5,15 @@ function sa = setupSAParams( debugLevel )
 % defaults regardless of debug level
 sa.params.quant = .9; % desired percentile of responses
 sa.params.tau = 3000;
-sa.params.x1 = .5; % initial maximum transparency
+sa.params.x1 = -.5; % initial maximum transparency (scaled: actual alpha is exp(x1))
 sa.params.ratio = 0.22; % ratio of mean to sd in weibull
-sa.params.R = 150;  % location of weibull
-sa.params.K = 220; 
+sa.params.R = 500;  % location of weibull
+sa.params.K = 1500; 
 sa.params.beta = 0.3;
 
-sa.params.delta = .5; % initial amount by which to change maximum transparency
+sa.params.delta = 5; % initial amount by which to change maximum transparency
 
-sa.values.nShifts = 0;
+sa.values.nShifts = NaN(100,1);
 sa.values.Yn = NaN(100,1);
 
 end

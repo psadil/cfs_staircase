@@ -20,7 +20,7 @@ switch debugLevel
         % anticipanted subject speed
         expParams.mondrianHertz = refreshRate/8;
         expParams.iti = 1;
-        expParams.nTrials = 100;
+        expParams.nTrials = 30;
         expParams.maxCFS = 30; % maximum number of ticks
         expParams.respDelay = 10*8;
     case 2
@@ -37,7 +37,6 @@ end
 expParams.nTicks = ceil(expParams.maxCFS * expParams.mondrianHertz);
 
 expParams.alpha.mondrian = linspace(1,1,expParams.nTicks);
-expParams.alpha.arrow = linspace(0,1,100); % should always take 100
 
 
 end

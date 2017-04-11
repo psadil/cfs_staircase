@@ -10,6 +10,8 @@ keys.escape = codes;
 keys.escape(KbName('ESCAPE')) = 1;
 keys.enter = codes;
 keys.enter(KbName({'Return'})) = 1;
+keys.space = codes;
+keys.space(KbName({'space'})) = 1;
 
 keys.pas = codes;
 keys.pas(KbName({'0','1','2','3','0)','1!','2@','3#'})) = 1;

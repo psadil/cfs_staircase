@@ -1,4 +1,4 @@
-function Xn1 = SA( X, trial, latency, sa)
+function Xn1 = SA( X, trial, latency, sa, expParams)
 %SA Stochastic Adaptation algorithm for updating value
 
 sa.values.Yn(trial) = Yn(latency, sa.params.tau);
@@ -7,10 +7,10 @@ sa.values.Yn(trial) = Yn(latency, sa.params.tau);
 sa.values.nShifts = length(nRuns);
 
 if trial < 3
-    Xn1 = X - (sa.params.delta/trial)*(yn - sa.params.quant);
+    Xn1 = X - (sa.params.delta/trial)*(sa.values.Yn(trial) - sa.params.quant);
 else
     Xn1 = X - (sa.params.delta/(2+sa.values.nShifts))*...
-        (yn - sa.params.quant);
+        (sa.values.Yn(trial) - sa.params.quant);
 end
 
 end

@@ -8,7 +8,7 @@ ip = inputParser;
 addParamValue(ip,'subject', 0, @isnumeric);
 addParamValue(ip,'dominantEye', 'Right', @(x) sum(strcmp(x, {'Left','Right'}))==1);
 addParamValue(ip,'refreshRate', 120, @isnumeric);
-addParamValue(ip,'debugLevel', 1, @(x) isnumeric(x) && x >= 0);
+addParamValue(ip,'debugLevel', 0, @(x) isnumeric(x) && x >= 0);
 addParamValue(ip,'responder', 'user', @(x) sum(strcmp(x, {'user','simpleKeypressRobot'}))==1)
 parse(ip,varargin{:});
 input = ip.Results;
@@ -43,23 +43,23 @@ try
     trial_SA = 1;
     for trial = 1:expParams.nTrials
         
-        [data.transparency(trial), ~] = wrapper_SA(data, trial, sa, trial_SA);
-        roboResps.rt(trial) = ...
-            setupRobotResponses(data.transparency(trial), input.debugLevel,...
+        [data.transparency(trial), trial_SA] = wrapper_SA(data, trial, sa, trial_SA, expParams);
+        [data.RoboRT(trial), data.meanRoboRT(trial)] = ...
+            setupRobotResponses(data.transparency(trial),...
             sa, expParams, data.jitter(trial), data.tType{trial});
         
         % make texture for this trial (function is setup to hopefully handle
         % creation of many textures if graphics card could handle that
         stims = makeTexs(data.item(trial), window);
         
-        % function that presents arrow stim and collects response
+        % function that presents stim and collects response
         [data.response(trial), data.rt(trial),...
             data.tStart(trial), data.tEnd(trial),...
             tInfo.vbl(tInfo.trial==trial), tInfo.missed(tInfo.trial==trial),...
             data.exitFlag(trial)] = ...
             elicitBCFS(window, responseHandler,...
             stims.tex, data.eyes{trial},...
-            keys, mondrians, expParams, constants, roboResps.rt(trial),...
+            keys, mondrians, expParams, constants, data.RoboRT(trial),...
             data.transparency(trial), data.jitter(trial));
         Screen('Close', stims.tex);
         % handle exitFlag, based on responses given
@@ -67,11 +67,19 @@ try
             case 'ESCAPE'
                 break;
             case 'CAUGHT'
-                showPromptAndWaitForResp(window, 'Please, only respond when an image is present!',...
+                showPromptAndWaitForResp(window, 'Please only hit ENTER when an image is present!',...
                     keys, constants, responseHandler);
+            case 'SPACE'
+                if strcmp(data.tType{trial},'NULL')
+                    showPromptAndWaitForResp(window, 'Correct! No object was going to appear.',...
+                        keys, constants, responseHandler);
+                elseif strcmp(data.tType{trial},'CFS')
+                    showPromptAndWaitForResp(window, 'Incorrect! An object was appearing.',...
+                        keys, constants, responseHandler);
+                end
             case 'OK'
-                if ~strcmp(data.response{trial},'NO RESPONSE')
-                    data.pas(trial) = getPAS(window, keys.pas, '2', constants, responseHandler);
+                if strcmp(data.response{trial},'Return')
+                    [data.pas(trial),~,~] = getPAS(window, keys.pas, '2', constants, responseHandler);
                 end
         end
         
@@ -79,7 +87,7 @@ try
         if mod(trial,10)==0 && trial ~= expParams.nTrials
             showPromptAndWaitForResp(window, ['You have completed ', num2str(trial), ' out of ', num2str(expParams.nTrials), ' trials'],...
                 keys, constants, responseHandler);
-            showPromptAndWaitForResp(window, 'Remember to keep your eyes focusd on the center white square',...
+            showPromptAndWaitForResp(window, 'Remember to keep your eyes focusd on the center cross',...
                 keys, constants, responseHandler);
         end
         
@@ -91,11 +99,11 @@ try
     writetable(data, [constants.fName, '.csv']);
     
     % end of the experiment
-    windowCleanup(constants, tInfo, expParams, input);
+    windowCleanup(constants, tInfo, expParams, input, sa);
     
 catch
     psychrethrow(psychlasterror);
-    windowCleanup(constants, tInfo, expParams, input)
+    windowCleanup(constants, tInfo, expParams, input, sa)
 end
 
 end
@@ -103,21 +111,25 @@ end
 %%
 function [] = giveInstruction(window, keys, responseHandler, constants)
 
-showPromptAndWaitForResp(window, 'You will see hidden objects emerge from flashing squares',...
+showPromptAndWaitForResp(window, 'In this experiment, you will see hidden objects emerge from flashing squares',...
     keys,constants,responseHandler);
 showPromptAndWaitForResp(window, ['When you are certain that an object has emerged, press the Enter key.\n',...
     'Please press the key as soon as you are certain that an object has appeared.\n',...
     'But, do NOT wait until you can identify the object.'],...
     keys,constants,responseHandler);
-showPromptAndWaitForResp(window, ['After each trial, you will be asked about how well you could see the object.\n',...
+showPromptAndWaitForResp(window, ['After each trial, you will be asked about how well you could see the object.\n\n',...
     'no image detected - 0\n',...
-    'ossibly saw, couldn''t name - 1\n',...
+    'possibly saw, couldn''t name - 1\n',...
     'definitely saw, but unsure what it was (could possibly guess) - 2\n',...
     'definitely saw, could name - 3\n',...
-    'Use the keypad to indicate your response\n',...
-    '\nYou should be pressing 2 on most trials.'],...
+    '\nYou should wait until you can give a response of 2\n',...
+    'but respond before you would give a response of 3\n', ...
+    '\nUse the keypad to indicate your response\n'],...
     keys,constants,responseHandler);
-showPromptAndWaitForResp(window, 'Finally, always keep your eyes focused on the center white square',...
+showPromptAndWaitForResp(window, ['On some trials, there will be no object\n',...
+    'If you think that there is no object, press SPACE'],...
+    keys,constants,responseHandler);
+showPromptAndWaitForResp(window, 'Finally, always keep your eyes focused on the center white cross',...
     keys,constants,responseHandler);
 
 iti(window, 1);
@@ -203,7 +215,7 @@ stims.tex = arrayfun(@(x) Screen('MakeTexture',window.pointer,x.image{:}), stims
 end
 
 %% wrapper for SA algorithm
-function [transparency, trial_SA] = wrapper_SA(data, trial, sa, trial_SA)
+function [transparency, trial_SA] = wrapper_SA(data, trial, sa, trial_SA, expParams)
 
 % This function helps implement two pieces of experimental logic.
 % First, the transparency on null trials is automatically set to 0.
@@ -217,13 +229,23 @@ if strcmp(data.tType{trial},'NULL')
 elseif strcmp(data.tType{trial},'CFS')
     data_SA = data(~strcmp(data.tType,'NULL'),:);
     if trial_SA == 1
-        transparency = sa.params.x1;
+        transparency_log = sa.params.x1;
     else
-        transparency = ...
-            SA(data_SA.transparency{trial_SA-1},...
-            trial_SA, data_SA.rt{trial_SA-1}, sa);
+        transparency_log = ...
+            SA(log(data_SA.transparency(trial_SA-1)),...
+            trial_SA, data_SA.rt(trial_SA-1), sa);
     end
     trial_SA = trial_SA + 1;
+    % need to convert transparency scale
+    transparency = exp(transparency_log);
+    % but, we can't have transparency greater than 1
+    transparency = min(1, transparency);
+    % to keep the rate constant, we need to alter the resolution of
+    % the value chosen
+%     transparency = transparency + mod(1/expParams.mondrianHertz,transparency);
+    % finally can't have value less than 1/mondrianHertz
+    transparency = max(transparency, 1/expParams.mondrianHertz);
 end
+
 end
 

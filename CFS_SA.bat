@@ -1,3 +1,3 @@
 
-
-"C:\Program Files\MATLAB\R2015a\bin\matlab.exe" sd "C:\Users\lab\Experiments\psadil\cfs_staircase" -nojvm -nodesktop -minimize -r "kludgeStart; main('responder','simpleKeypressRobot'); exit;"
+cd "C:\Users\lab\Experiments\psadil\cfs_staircase" 
+"C:\Program Files\MATLAB\R2015a\bin\matlab.exe" -nojvm -nodesktop -minimize -r "kludgeStart; main('responder','user'); exit;"

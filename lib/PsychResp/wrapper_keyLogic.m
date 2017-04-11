@@ -5,7 +5,7 @@ function [response, rt, exitFlag] = ...
 % Add the direction just pressed to the input
 % string, and record the timestamp of its keypress.
 % For arrow response, this will produce either 'left' or 'right'
-rt = NaN;
+% rt = NaN;
 exitFlag = {'OK'};
 
 if any(keys_pressed == 102)
@@ -21,5 +21,7 @@ end
 response = {KbName(key)};
 if any(keys_pressed==KbName('ESCAPE'))
     exitFlag = {'ESCAPE'};
+elseif any(keys_pressed==KbName('SPACE'))
+    exitFlag = {'SPACE'};
 end
 end

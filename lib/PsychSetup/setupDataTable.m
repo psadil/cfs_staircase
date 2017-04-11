@@ -36,6 +36,8 @@ data.transparency = NaN(expParams.nTrials,1);
 data.pas = cell(expParams.nTrials,1);
 data.response = cell(expParams.nTrials,1);
 data.rt = NaN(expParams.nTrials,1);
+data.RoboRT = NaN(expParams.nTrials,1);
+data.meanRoboRT = NaN(expParams.nTrials,1);
 
 end
 
